@@ -36,13 +36,19 @@ def make_key(func, *args, **kwargs):
 
 
 class WatchDiff:
-    def __init__(self, func, dbpath, callback):
+    def __init__(self, func, dbpath, callback, key=None):
         wraps(func)(self)
         self.dbpath = dbpath
         self.callback = callback
+        self.key = key
 
     def __call__(self, *args, **kwargs):
-        key = make_key(self.__wrapped__, *args, **kwargs)
+        if isinstance(self.key, str):
+            key = self.key.encode('ascii')
+        elif isinstance(self.key, bytes):
+            key = self.key
+        else:
+            key = make_key(self.__wrapped__, *args, **kwargs)
         new_data = self.__wrapped__(*args, **kwargs)
         old_data = None
         try:
@@ -67,6 +73,8 @@ class WatchDiff:
                 if old_data and old_data != new_data:
                     logging.debug('data change from {} to {}, run callback function'.format(old_data, new_data))
                     self.callback(old_data, new_data)
+                else:
+                    logging.debug('data not change, callback function will not run')
             except:
                 logging.error('callback function error for data change from {} to {}'.format(old_data, new_data))
         return new_data
@@ -79,8 +87,8 @@ class WatchDiff:
             return types.MethodType(self, instance)
 
 
-def watchdiff(dbpath, callback):
+def watchdiff(dbpath, callback, key=None):
     def wrapper(func):
-        return WatchDiff(func, dbpath, callback)
+        return WatchDiff(func, dbpath, callback, key)
     return wrapper
 
