@@ -7,7 +7,7 @@
 ### 安装
 
 ```cmd
-pip install diff_trigger
+pip install diff-trigger
 ```
 
 
